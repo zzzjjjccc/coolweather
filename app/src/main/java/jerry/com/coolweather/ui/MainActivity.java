@@ -1,7 +1,9 @@
-package jerry.com.coolweather;
+package jerry.com.coolweather.ui;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+
+import jerry.com.coolweather.R;
 
 public class MainActivity extends AppCompatActivity {
 
