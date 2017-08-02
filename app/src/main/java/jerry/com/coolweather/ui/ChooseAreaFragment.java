@@ -26,6 +26,7 @@ import jerry.com.coolweather.db.City;
 import jerry.com.coolweather.db.County;
 import jerry.com.coolweather.db.Province;
 import jerry.com.coolweather.util.HttpUtil;
+import jerry.com.coolweather.util.LogUtil;
 import jerry.com.coolweather.util.Utility;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -93,12 +94,15 @@ public class ChooseAreaFragment extends Fragment {
         listView = (ListView) view.findViewById(R.id.list_view);
         adapter = new ArrayAdapter<String>(getContext(), android.R.layout.simple_list_item_1, dataList);
         listView.setAdapter(adapter);
+        LogUtil.i("ChooseAreaFragment", "onCreateView is called");
         return view;
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        LogUtil.i("ChooseAreaFragment", "onActivityCreated is called");
+
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -144,6 +148,7 @@ public class ChooseAreaFragment extends Fragment {
     private void queryProvinces() {
         titleText.setText("中国");
         backButton.setVisibility(View.GONE);
+
         provinceList = DataSupport.findAll(Province.class);
         if (provinceList.size() > 0){
             dataList.clear();
@@ -189,11 +194,13 @@ public class ChooseAreaFragment extends Fragment {
         titleText.setText(selectedCity.getCityName());
         backButton.setVisibility(View.VISIBLE);
         countyList = DataSupport.where("cityid = ?", String.valueOf(selectedCity.getId())).find(County.class);
+
         if (countyList.size() > 0){
             dataList.clear();
             for (County county : countyList){
                 dataList.add(county.getCountyName());
             }
+            adapter.notifyDataSetChanged();
             listView.setSelection(0);
             currentLevel = LEVEL_COUNTY;
         } else {

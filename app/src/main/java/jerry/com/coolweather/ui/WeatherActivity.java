@@ -1,5 +1,6 @@
 package jerry.com.coolweather.ui;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import jerry.com.coolweather.R;
 import jerry.com.coolweather.gson.Forecast;
 import jerry.com.coolweather.gson.Weather;
+import jerry.com.coolweather.service.AutoUpdateService;
 import jerry.com.coolweather.util.HttpUtil;
 import jerry.com.coolweather.util.LogUtil;
 import jerry.com.coolweather.util.Utility;
@@ -102,6 +104,7 @@ public class WeatherActivity extends AppCompatActivity {
         if (weatherString != null){
             //有缓存直接解析天气数据
             Weather weather = Utility.handleWeatherResponse(weatherString);
+            //每次刷新就用上次结束运用的weatherId
             weatherId = weather.basic.weatherId;
             showWeatherInfo(weather);
         } else {
@@ -113,6 +116,9 @@ public class WeatherActivity extends AppCompatActivity {
         swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
+                //每次刷新用刚选中的县。
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(WeatherActivity.this);
+                String weatherId = prefs.getString("weather_id", null);
                 requestWeather(weatherId);
             }
         });
@@ -127,7 +133,7 @@ public class WeatherActivity extends AppCompatActivity {
     /**根据天气id请求城市天气信息
      * @param weatherId
      */
-    public void requestWeather(String weatherId) {
+    public void requestWeather(final String weatherId) {
         String weatherUrl = "http://guolin.tech/api/weather?cityid=" +
                 weatherId + "&key=ab0faa1a0d1540a0adec523b45865bbd";
         LogUtil.i("WeatherActivity", weatherUrl);
@@ -155,6 +161,8 @@ public class WeatherActivity extends AppCompatActivity {
                             SharedPreferences.Editor editor = PreferenceManager
                                     .getDefaultSharedPreferences(WeatherActivity.this).edit();
                             editor.putString("weather", responseText);
+
+                            editor.putString("weather_id", weatherId);
                             editor.apply();
                             showWeatherInfo(weather);
                         } else {
@@ -197,6 +205,12 @@ public class WeatherActivity extends AppCompatActivity {
      * @param weather
      */
     private void showWeatherInfo(Weather weather) {
+        if (weather != null && "ok".equals(weather.status)){
+            Intent intent = new Intent(this, AutoUpdateService.class);
+            startService(intent);
+        } else {
+            Toast.makeText(WeatherActivity.this, "获取天气信息失败", Toast.LENGTH_SHORT).show();
+        }
         String cityName = weather.basic.cityName;
         String updateTime = weather.basic.update.updateTime.split(" ")[1];
         String degree = weather.now.temperature + "°C";
@@ -232,5 +246,11 @@ public class WeatherActivity extends AppCompatActivity {
         carWashText.setText(carWash);
         sportText.setText(sport);
         weatherLayout.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        LogUtil.i("WeatherActivity", "onDestroy is called");
     }
 }
